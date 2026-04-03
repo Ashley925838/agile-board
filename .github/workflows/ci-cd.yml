@@ -1,0 +1,55 @@
+# 这是整个流水线的名字，会显示在 GitHub Actions 页面上
+name: AgileBoard CI/CD Pipeline
+
+# 触发条件：什么时候运行这个流水线？
+on:
+  push:
+    branches: [ main ]        # 当有代码推送到 main 分支时
+  pull_request:
+    branches: [ main ]        # 当有 Pull Request 指向 main 分支时
+
+# 流水线的所有任务
+jobs:
+  build-and-test:
+    # 运行环境：GitHub 提供的 Ubuntu 虚拟机（免费）
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: 把代码下载到虚拟机里
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: 设置 Java 17 环境
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven          # 缓存 Maven 依赖，加快后续构建速度
+
+      # Step 3: 编译代码（CI 的第一步——确保代码没有语法错误）
+      - name: Compile
+        run: mvn compile
+
+      # Step 4: 运行单元测试（测试不通过，流水线停止）
+      - name: Run unit tests
+        run: mvn test
+
+      # Step 5: OWASP 依赖安全扫描（DevSecOps 的核心）
+      # 注意：第一次运行会很慢（需要下载漏洞数据库），之后有缓存会快
+      - name: OWASP Dependency Check
+        run: mvn org.owasp:dependency-check-maven:check
+        continue-on-error: true  # 暂时设为 true，避免扫描失败阻断整个流水线
+
+      # Step 6: 打包成 jar 文件（跳过测试，因为上面已经测过了）
+      - name: Build JAR
+        run: mvn package -DskipTests
+
+      # Step 7: 构建 Docker 镜像（需要先有 Dockerfile）
+      # 暂时注释掉，等我们写好 Dockerfile 再开启
+      # - name: Build Docker image
+      #   run: docker build -t agile-board:latest .
+
+      # Step 8: 模拟部署（真实项目会推送到服务器）
+      - name: Deploy (simulated)
+        run: echo "✅ Deploy successful! AgileBoard is live."
