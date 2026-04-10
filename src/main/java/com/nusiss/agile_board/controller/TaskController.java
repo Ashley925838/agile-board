@@ -10,6 +10,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Controller
 @RequiredArgsConstructor
 public class TaskController {
@@ -18,7 +21,7 @@ public class TaskController {
     private final SprintService sprintService;
     private final UserRepository userRepository;
 
-    // Task 列表（也是 Kanban 入口）
+    // Task 列表（简单列表视图）
     @GetMapping("/sprints/{sprintId}/tasks")
     public String listTasks(@PathVariable Long sprintId, Model model) {
         model.addAttribute("sprint", sprintService.getSprintById(sprintId));
@@ -28,7 +31,29 @@ public class TaskController {
         return "tasks/list";
     }
 
-    // 显示创建 Task 表单
+    // Kanban 看板视图（把 tasks 按状态分成三组传给模板）
+    @GetMapping("/sprints/{sprintId}/kanban")
+    public String kanbanBoard(@PathVariable Long sprintId, Model model) {
+        List<Task> allTasks = taskService.getTasksBySprint(sprintId);
+
+        model.addAttribute("sprint", sprintService.getSprintById(sprintId));
+        model.addAttribute("todoTasks",
+                allTasks.stream()
+                        .filter(t -> t.getStatus() == Task.Status.TODO)
+                        .collect(Collectors.toList()));
+        model.addAttribute("inProgressTasks",
+                allTasks.stream()
+                        .filter(t -> t.getStatus() == Task.Status.IN_PROGRESS)
+                        .collect(Collectors.toList()));
+        model.addAttribute("doneTasks",
+                allTasks.stream()
+                        .filter(t -> t.getStatus() == Task.Status.DONE)
+                        .collect(Collectors.toList()));
+
+        return "tasks/kanban";
+    }
+
+    // 创建 Task 表单
     @GetMapping("/sprints/{sprintId}/tasks/new")
     public String newTaskForm(@PathVariable Long sprintId, Model model) {
         model.addAttribute("sprint", sprintService.getSprintById(sprintId));
@@ -37,7 +62,7 @@ public class TaskController {
         return "tasks/form";
     }
 
-    // 创建 Task
+    // 提交创建 Task
     @PostMapping("/sprints/{sprintId}/tasks")
     public String createTask(@PathVariable Long sprintId,
                              @RequestParam String title,
@@ -45,10 +70,10 @@ public class TaskController {
                              @RequestParam Task.Priority priority,
                              @RequestParam(required = false) Long assignedToId) {
         taskService.createTask(sprintId, title, description, priority, assignedToId);
-        return "redirect:/sprints/" + sprintId + "/tasks";
+        return "redirect:/sprints/" + sprintId + "/kanban";
     }
 
-    // Kanban 拖拽更新状态（AJAX 调用，返回 JSON）
+    // Kanban 拖拽更新状态（AJAX）
     @PostMapping("/tasks/{taskId}/status")
     @ResponseBody
     public ResponseEntity<String> updateStatus(@PathVariable Long taskId,
@@ -62,6 +87,6 @@ public class TaskController {
     public String deleteTask(@PathVariable Long taskId,
                              @RequestParam Long sprintId) {
         taskService.deleteTask(taskId);
-        return "redirect:/sprints/" + sprintId + "/tasks";
+        return "redirect:/sprints/" + sprintId + "/kanban";
     }
 }

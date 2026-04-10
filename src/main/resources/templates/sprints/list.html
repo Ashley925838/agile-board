@@ -42,10 +42,12 @@
                     </p>
                 </div>
                 <div class="card-footer bg-transparent d-flex gap-2">
+                    <a th:href="@{/sprints/{id}/kanban(id=${sprint.id})}"
+                       class="btn btn-sm btn-primary">Kanban Board</a>
                     <a th:href="@{/sprints/{id}/tasks(id=${sprint.id})}"
-                       class="btn btn-sm btn-outline-primary">View Tasks</a>
+                       class="btn btn-sm btn-outline-secondary">List View</a>
                     <form th:action="@{/projects/{pid}/sprints/{sid}/delete(pid=${project.id},sid=${sprint.id})}"
-                          method="post">
+                          method="post" class="ms-auto">
                         <button type="submit" class="btn btn-sm btn-outline-danger"
                                 onclick="return confirm('Delete this sprint?')">Delete</button>
                     </form>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Kanban — AgileBoard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .kanban-col {
+            min-height: 500px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .kanban-col.drag-over {
+            background: #e8f4ff;
+            border: 2px dashed #0d6efd;
+        }
+        .task-card {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            cursor: grab;
+            border-left: 4px solid #dee2e6;
+        }
+        .task-card.priority-HIGH   { border-left-color: #dc3545; }
+        .task-card.priority-MEDIUM { border-left-color: #ffc107; }
+        .task-card.priority-LOW    { border-left-color: #6c757d; }
+        .task-card:active { cursor: grabbing; opacity: 0.7; }
+        .col-header {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #dee2e6;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/dashboard}">AgileBoard</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-light small" th:text="${sprint.name}">Sprint</span>
+            <a th:href="@{/sprints/{id}/tasks(id=${sprint.id})}"
+               class="btn btn-outline-light btn-sm">List View</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="mb-0" th:text="${sprint.name}">Sprint</h5>
+            <small class="text-muted" th:text="${sprint.goal ?: 'No sprint goal set'}"></small>
+        </div>
+        <a th:href="@{/sprints/{id}/tasks/new(id=${sprint.id})}"
+           class="btn btn-primary btn-sm">+ Add Task</a>
+    </div>
+
+    <!-- Kanban 三列 -->
+    <div class="row g-3">
+
+        <!-- TODO 列 -->
+        <div class="col-md-4">
+            <div class="col-header text-secondary">
+                📋 To Do
+                <span class="badge bg-secondary ms-1"
+                      th:text="${#lists.size(todoTasks)}">0</span>
+            </div>
+            <div class="kanban-col"
+                 id="col-TODO"
+                 ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="drop(event, 'TODO')">
+
+                <div th:each="task : ${todoTasks}"
+                     th:id="'task-' + ${task.id}"
+                     th:class="'task-card priority-' + ${task.priority}"
+                     draggable="true"
+                     th:attr="ondragstart='drag(event, ' + ${task.id} + ')'">
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <span class="fw-semibold small" th:text="${task.title}">Title</span>
+                        <span class="badge ms-2 flex-shrink-0"
+                              th:classappend="${task.priority.name() == 'HIGH'} ? 'bg-danger' :
+                                             (${task.priority.name() == 'MEDIUM'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                              th:text="${task.priority}">P</span>
+                    </div>
+                    <div th:if="${task.description}" class="text-muted mt-1"
+                         style="font-size:0.78rem"
+                         th:text="${#strings.abbreviate(task.description, 60)}"></div>
+                    <div th:if="${task.assignedTo != null}"
+                         class="mt-2 text-muted" style="font-size:0.78rem"
+                         th:text="'👤 ' + ${task.assignedTo.username}"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- IN PROGRESS 列 -->
+        <div class="col-md-4">
+            <div class="col-header text-primary">
+                🔄 In Progress
+                <span class="badge bg-primary ms-1"
+                      th:text="${#lists.size(inProgressTasks)}">0</span>
+            </div>
+            <div class="kanban-col"
+                 id="col-IN_PROGRESS"
+                 ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="drop(event, 'IN_PROGRESS')">
+
+                <div th:each="task : ${inProgressTasks}"
+                     th:id="'task-' + ${task.id}"
+                     th:class="'task-card priority-' + ${task.priority}"
+                     draggable="true"
+                     th:attr="ondragstart='drag(event, ' + ${task.id} + ')'">
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <span class="fw-semibold small" th:text="${task.title}">Title</span>
+                        <span class="badge ms-2 flex-shrink-0"
+                              th:classappend="${task.priority.name() == 'HIGH'} ? 'bg-danger' :
+                                             (${task.priority.name() == 'MEDIUM'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                              th:text="${task.priority}">P</span>
+                    </div>
+                    <div th:if="${task.description}" class="text-muted mt-1"
+                         style="font-size:0.78rem"
+                         th:text="${#strings.abbreviate(task.description, 60)}"></div>
+                    <div th:if="${task.assignedTo != null}"
+                         class="mt-2 text-muted" style="font-size:0.78rem"
+                         th:text="'👤 ' + ${task.assignedTo.username}"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- DONE 列 -->
+        <div class="col-md-4">
+            <div class="col-header text-success">
+                ✅ Done
+                <span class="badge bg-success ms-1"
+                      th:text="${#lists.size(doneTasks)}">0</span>
+            </div>
+            <div class="kanban-col"
+                 id="col-DONE"
+                 ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="drop(event, 'DONE')">
+
+                <div th:each="task : ${doneTasks}"
+                     th:id="'task-' + ${task.id}"
+                     th:class="'task-card priority-' + ${task.priority}"
+                     draggable="true"
+                     th:attr="ondragstart='drag(event, ' + ${task.id} + ')'">
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <span class="fw-semibold small" th:text="${task.title}">Title</span>
+                        <span class="badge ms-2 flex-shrink-0"
+                              th:classappend="${task.priority.name() == 'HIGH'} ? 'bg-danger' :
+                                             (${task.priority.name() == 'MEDIUM'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                              th:text="${task.priority}">P</span>
+                    </div>
+                    <div th:if="${task.description}" class="text-muted mt-1"
+                         style="font-size:0.78rem"
+                         th:text="${#strings.abbreviate(task.description, 60)}"></div>
+                    <div th:if="${task.assignedTo != null}"
+                         class="mt-2 text-muted" style="font-size:0.78rem"
+                         th:text="'👤 ' + ${task.assignedTo.username}"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let draggedTaskId = null;
+
+    // 开始拖拽时记录被拖的 task id
+    function drag(event, taskId) {
+        draggedTaskId = taskId;
+        event.dataTransfer.effectAllowed = 'move';
+    }
+
+    // 放下时：把卡片移到新列，发请求给后端更新状态
+    function drop(event, newStatus) {
+        event.preventDefault();
+        const col = document.getElementById('col-' + newStatus);
+        col.classList.remove('drag-over');
+
+        if (!draggedTaskId) return;
+
+        // 把 DOM 卡片移过来（即时视觉反馈）
+        const card = document.getElementById('task-' + draggedTaskId);
+        if (card) col.appendChild(card);
+
+        // 通知后端更新数据库
+        fetch('/tasks/' + draggedTaskId + '/status?status=' + newStatus, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.cookie
+                    .split(';')
+                    .find(c => c.trim().startsWith('XSRF-TOKEN='))
+                    ?.split('=')[1] || ''
+            }
+        }).catch(err => console.error('Status update failed:', err));
+
+        draggedTaskId = null;
+    }
+</script>
+
+</body>
+</html>
