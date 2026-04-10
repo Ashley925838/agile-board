@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Projects — AgileBoard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/dashboard}">AgileBoard</a>
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/projects}" class="text-light text-decoration-none small">Projects</a>
+            <a th:href="@{/logout}" class="btn btn-outline-light btn-sm">Sign Out</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">My Projects</h4>
+        <a th:href="@{/projects/new}" class="btn btn-primary btn-sm">+ New Project</a>
+    </div>
+
+    <!-- 没有项目时显示空状态 -->
+    <div th:if="${#lists.isEmpty(projects)}" class="text-center py-5 text-muted">
+        <p class="mb-2">No projects yet.</p>
+        <a th:href="@{/projects/new}" class="btn btn-outline-primary btn-sm">Create your first project</a>
+    </div>
+
+    <!-- 项目列表 -->
+    <div class="row g-3">
+        <div class="col-md-4" th:each="project : ${projects}">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title" th:text="${project.name}">Project Name</h6>
+                    <p class="card-text text-muted small"
+                       th:text="${project.description ?: 'No description'}">Description</p>
+                </div>
+                <div class="card-footer bg-transparent d-flex gap-2">
+                    <a th:href="@{/projects/{id}/sprints(id=${project.id})}"
+                       class="btn btn-sm btn-outline-primary">View Sprints</a>
+                    <form th:action="@{/projects/{id}/delete(id=${project.id})}" method="post">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Delete this project?')">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

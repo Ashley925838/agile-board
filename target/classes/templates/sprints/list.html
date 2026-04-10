@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprints — AgileBoard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/dashboard}">AgileBoard</a>
+        <a th:href="@{/projects}" class="text-light text-decoration-none small">← Projects</a>
+    </div>
+</nav>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0" th:text="${project.name}">Project Name</h4>
+            <span class="text-muted small">Sprints</span>
+        </div>
+        <a th:href="@{/projects/{id}/sprints/new(id=${project.id})}"
+           class="btn btn-primary btn-sm">+ New Sprint</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(sprints)}" class="text-center py-5 text-muted">
+        <p>No sprints yet. Create your first sprint to start planning.</p>
+        <a th:href="@{/projects/{id}/sprints/new(id=${project.id})}"
+           class="btn btn-outline-primary btn-sm">Create Sprint</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4" th:each="sprint : ${sprints}">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title" th:text="${sprint.name}">Sprint Name</h6>
+                    <p class="text-muted small mb-1"
+                       th:text="${sprint.goal ?: 'No goal set'}">Goal</p>
+                    <p class="text-muted small">
+                        <span th:text="${sprint.startDate}"></span>
+                        →
+                        <span th:text="${sprint.endDate}"></span>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent d-flex gap-2">
+                    <a th:href="@{/sprints/{id}/tasks(id=${sprint.id})}"
+                       class="btn btn-sm btn-outline-primary">View Tasks</a>
+                    <form th:action="@{/projects/{pid}/sprints/{sid}/delete(pid=${project.id},sid=${sprint.id})}"
+                          method="post">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Delete this sprint?')">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
